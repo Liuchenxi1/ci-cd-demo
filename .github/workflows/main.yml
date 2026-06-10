@@ -5,14 +5,12 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # Allows admins to trigger it manually for live training
-
+  workflow_dispatch:
+  
 jobs:
-  # --- 1. BUILD STAGE ---
   build:
     name: Build Application
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
