@@ -1,0 +1,80 @@
+name: Enterprise CI/CD Demo
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows admins to trigger it manually for live training
+
+jobs:
+  # --- 1. BUILD STAGE ---
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Build
+        run: |
+          npm install
+          npm run build
+
+      # Saves the build output so the deployment job can access it
+       Schatz Workspace:
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-assets
+          path: dist/
+          retention-days: 1
+
+  # --- 2. TEST STAGE ---
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    needs: build # Runs in parallel or after build, but depends on build success
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Unit Tests
+        run: |
+          npm install
+          npm run test
+
+  # --- 3. DEPLOY STAGE ---
+  deploy:
+    name: Deploy to Mock Production
+    runs-on: ubuntu-latest
+    needs: [build, test] # ONLY runs if BOTH build and test jobs pass successfully
+    if: github.ref == 'refs/heads/main' # Only deploy on merges to main
+
+    steps:
+      # Downloads the artifact saved during the build stage
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: production-assets
+          path: dist/
+
+      # This simulates a deployment without needing AWS/Azure/GCP credentials
+      - name: Simulate Cloud Deployment
+        run: |
+          echo "Connecting to production server..."
+          echo "Deploying files from ./dist directory..."
+          cat dist/index.html
+          echo "Deployment completed successfully! 🎉"
